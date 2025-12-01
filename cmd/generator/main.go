@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
+
+	"github.com/joho/godotenv"
 )
 
-const (
-	session_cookie = "53616c7465645f5f82f7e9e55e56ebf86e4feff6a3491390f3e8809ef989e6396bd60a459792053fd6051dc902ad239fcd198d1524deda3d4458ac5c5c40ea58"
+var (
+	session_cookie = loadSessionCookie()
 )
 
 //go:embed templates/*
@@ -34,6 +36,20 @@ func main() {
 
 	createDayFiles(dirName, dirPath)
 	downloadAOCInput(*year, *day, session_cookie, dirPath)
+}
+
+func loadSessionCookie() string {
+	// Load .env file (silently ignore if already loaded)
+	if err := godotenv.Load(); err != nil {
+		// If .env isn't present, continue — env vars might already be set
+		log.Printf("warning: could not load .env file: %v", err)
+	}
+
+	cookie := os.Getenv("SESSION_COOKIE")
+	if cookie == "" {
+		log.Println("warning: SESSION_COOKIE is not set")
+	}
+	return cookie
 }
 
 func createDayFiles(dirName, dirPath string) {
