@@ -1,0 +1,122 @@
+package main
+
+import (
+	"embed"
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"text/template"
+)
+
+const (
+	session_cookie = "53616c7465645f5f82f7e9e55e56ebf86e4feff6a3491390f3e8809ef989e6396bd60a459792053fd6051dc902ad239fcd198d1524deda3d4458ac5c5c40ea58"
+)
+
+//go:embed templates/*
+var templatesFS embed.FS
+
+func main() {
+	year := flag.Int("year", 0, "Advent of Code year")
+	day := flag.Int("day", 0, "Advent of Code day")
+	flag.Parse()
+
+	if *year == 0 || *day == 0 {
+		log.Fatalf("both --year and --day must be provided. year=%d day=%d", *year, *day)
+	}
+
+	// Directory name: cmd/<year>_<day>
+	dirName := fmt.Sprintf("%d_%02d", *year, *day)
+	dirPath := filepath.Join("cmd", dirName)
+
+	createDayFiles(dirName, dirPath)
+	downloadAOCInput(*year, *day, session_cookie, dirPath)
+}
+
+func createDayFiles(dirName, dirPath string) {
+
+	if err := os.MkdirAll(dirPath, 0o755); err != nil {
+		log.Fatalf("failed to create directory %s: %v", dirPath, err)
+	}
+
+	// Output file
+	outPath := filepath.Join(dirPath, "main.go")
+
+	// Parse template file
+	tmpl, err := template.ParseFS(templatesFS, "templates/main.tmpl")
+	if err != nil {
+		log.Fatalf("failed to parse template file: %v", err)
+	}
+
+	// Template data (expand this later if you want day/year in template)
+	data := map[string]any{
+		"Dir": dirName,
+	}
+
+	// Write main.go
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		log.Fatalf("failed to create %s: %v", outPath, err)
+	}
+	defer outFile.Close()
+
+	if err := tmpl.Execute(outFile, data); err != nil {
+		log.Fatalf("failed to render template: %v", err)
+	}
+
+	fmt.Printf("Created %s\n", outPath)
+
+}
+
+func downloadAOCInput(year, day int, session, dirPath string) error {
+	if session == "" {
+		return fmt.Errorf("AOC session token is empty — set the AOC_SESSION environment variable")
+	}
+
+	url := fmt.Sprintf("https://adventofcode.com/%d/day/%d/input", year, day)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// AoC requires a "session" cookie
+	req.AddCookie(&http.Cookie{
+		Name:  "session",
+		Value: session,
+	})
+
+	// Optional: Identify yourself (recommended but not required)
+	req.Header.Set("User-Agent", "github.com/yourusername/aocgen tool")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf(
+			"unexpected status %d\nURL: %s\nBody: %s",
+			resp.StatusCode, url, string(body),
+		)
+	}
+
+	outPath := filepath.Join(dirPath, "input.txt")
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		return fmt.Errorf("failed to create input.txt: %w", err)
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
