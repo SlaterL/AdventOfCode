@@ -16,6 +16,9 @@ import (
 
 var (
 	session_cookie = loadSessionCookie()
+	lang_templates = map[string]string{
+		"go": "templates/main_go.tmpl",
+	}
 )
 
 //go:embed templates/*
@@ -24,6 +27,7 @@ var templatesFS embed.FS
 func main() {
 	year := flag.Int("year", 0, "Advent of Code year")
 	day := flag.Int("day", 0, "Advent of Code day")
+	lang := flag.String("lang", "go", "Language for generated main")
 	flag.Parse()
 
 	if *year == 0 || *day == 0 {
@@ -34,7 +38,7 @@ func main() {
 	dirName := fmt.Sprintf("%d_%02d", *year, *day)
 	dirPath := filepath.Join("cmd", dirName)
 
-	createDayFiles(dirName, dirPath)
+	createDayFiles(dirName, dirPath, *lang)
 	downloadAOCInput(*year, *day, session_cookie, dirPath)
 }
 
@@ -52,8 +56,7 @@ func loadSessionCookie() string {
 	return cookie
 }
 
-func createDayFiles(dirName, dirPath string) {
-
+func createDayFiles(dirName, dirPath, lang string) {
 	if err := os.MkdirAll(dirPath, 0o755); err != nil {
 		log.Fatalf("failed to create directory %s: %v", dirPath, err)
 	}
@@ -62,7 +65,7 @@ func createDayFiles(dirName, dirPath string) {
 	outPath := filepath.Join(dirPath, "main.go")
 
 	// Parse template file
-	tmpl, err := template.ParseFS(templatesFS, "templates/main.tmpl")
+	tmpl, err := template.ParseFS(templatesFS, lang_templates[lang])
 	if err != nil {
 		log.Fatalf("failed to parse template file: %v", err)
 	}

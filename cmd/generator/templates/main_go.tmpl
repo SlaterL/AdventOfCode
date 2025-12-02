@@ -12,7 +12,7 @@ func main() {
 	part := flag.String("part", "both", "Which part to run: 1, 2, or both")
 	inputFile := flag.String("input", "input.txt", "What test file should be used")
 	flag.Parse()
-	inputPath := filepath.Join("cmd", "2025_01", *inputFile)
+	inputPath := filepath.Join("cmd", "{{ .Dir }}", *inputFile)
 
 	lines, err := parse.ParseLines(inputPath)
 	if err != nil {
