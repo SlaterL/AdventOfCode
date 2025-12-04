@@ -8,6 +8,10 @@ import (
 	"path/filepath"
 )
 
+var (
+	adj = [][]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}
+)
+
 func main() {
 	part := flag.String("part", "both", "Which part to run: 1, 2, or both")
 	inputFile := flag.String("input", "input.txt", "What test file should be used")
@@ -43,31 +47,13 @@ func part1(lines []string) any {
 			}
 			surrounding := 0
 
-			if row > 0 {
-				if col > 0 && lines[row-1][col-1] == '@' {
-					surrounding++
+			for _, deltas := range adj {
+				dRow := row + deltas[0]
+				dCol := col + deltas[1]
+				if dRow < 0 || dRow > rowMax || dCol < 0 || dCol > colMax {
+					continue
 				}
-				if lines[row-1][col] == '@' {
-					surrounding++
-				}
-				if col < colMax && lines[row-1][col+1] == '@' {
-					surrounding++
-				}
-			}
-			if col > 0 && lines[row][col-1] == '@' {
-				surrounding++
-			}
-			if col < colMax && lines[row][col+1] == '@' {
-				surrounding++
-			}
-			if row < rowMax {
-				if col > 0 && lines[row+1][col-1] == '@' {
-					surrounding++
-				}
-				if lines[row+1][col] == '@' {
-					surrounding++
-				}
-				if col < colMax && lines[row+1][col+1] == '@' {
+				if lines[dRow][dCol] == '@' {
 					surrounding++
 				}
 			}
@@ -92,31 +78,13 @@ func part2(lines []string) any {
 				}
 				surrounding := 0
 
-				if row > 0 {
-					if col > 0 && lines[row-1][col-1] == '@' {
-						surrounding++
+				for _, deltas := range adj {
+					dRow := row + deltas[0]
+					dCol := col + deltas[1]
+					if dRow < 0 || dRow > rowMax || dCol < 0 || dCol > colMax {
+						continue
 					}
-					if lines[row-1][col] == '@' {
-						surrounding++
-					}
-					if col < colMax && lines[row-1][col+1] == '@' {
-						surrounding++
-					}
-				}
-				if col > 0 && lines[row][col-1] == '@' {
-					surrounding++
-				}
-				if col < colMax && lines[row][col+1] == '@' {
-					surrounding++
-				}
-				if row < rowMax {
-					if col > 0 && lines[row+1][col-1] == '@' {
-						surrounding++
-					}
-					if lines[row+1][col] == '@' {
-						surrounding++
-					}
-					if col < colMax && lines[row+1][col+1] == '@' {
+					if lines[dRow][dCol] == '@' {
 						surrounding++
 					}
 				}
